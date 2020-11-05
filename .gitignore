@@ -1,0 +1,6 @@
+# all the output files go to obj
+obj
+
+#compiled binaries
+vasm6502_oldstyle
+vasmavr_oldstyle
