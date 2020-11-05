@@ -9,7 +9,7 @@ OBJS = $(PRE)vasm.o $(PRE)atom.o $(PRE)expr.o $(PRE)symtab.o $(PRE)symbol.o \
 
 VODOBJS = obj$(TARGET)/vobjdump.o
 
-INCLUDES = -I. -Icpus/$(CPU) -Isyntax/$(SYNTAX) 
+INCLUDES = -I. -Icpus/$(CPU) -Isyntax/$(SYNTAX)
 
 VASMEXE = vasm$(CPU)_$(SYNTAX)$(TARGET)$(TARGETEXTENSION)
 VOBJDMPEXE = vobjdump$(TARGET)$(TARGETEXTENSION)

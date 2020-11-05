@@ -21,27 +21,28 @@ typedef uint32_t utaddr;
 #define INST_ALIGN 4
 
 /* default alignment for n-bit data */
-#define DATA_ALIGN(n) ((n) <= 8 ? 1 : ((n) <= 16 ? 2 : 4))
+#define DATA_ALIGN(n) ((n)<=8 ? 1 : ((n)<=16 ? 2 : 4))
+
 
 /* type to store each operand */
 typedef struct {
-	int16_t type; /* type of operand from mnemonic.operand_type */
-	uint8_t reg; /* Register number if there is one */
-	expr* value; /* single register, immed. val. or branch loc.*/
+  int16_t type;               /* type of operand from mnemonic.operand_type */
+  uint8_t reg;                /* Register number if there is one */
+  expr *value;                /* single register, immed. val. or branch loc.*/
 } operand;
 
 /* operand types */
-#define NO_OP (0)
-#define OP_GPR (1) /* %r0 to %r15 or %y, %bp %sp, %ia %flags */
-#define OP_IMM (2)
+#define  NO_OP    (0)
+#define  OP_GPR   (1) /* %r0 to %r15 or %y, %bp %sp, %ia %flags */
+#define  OP_IMM   (2)
 
 /* operand class for n-bit data definitions */
 #define DATA_OPERAND(n) OP_IMM
 
-#define CPU_ALL (-1)
+#define CPU_ALL  (-1)
 
 typedef struct {
-	unsigned char opcode; /* OpCode */
-	unsigned char rn_pos; /* Position of Rn */
-	unsigned char available; /* CPU variants were is available */
+  unsigned char opcode;    /* OpCode */
+  unsigned char rn_pos;    /* Position of Rn */
+  unsigned char available; /* CPU variants were is available */
 } mnemonic_extension;

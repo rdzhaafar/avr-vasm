@@ -10,16 +10,16 @@
 #define FIRST_OUTPUT_ERROR 3001
 
 struct err_out {
-	char* text;
-	int flags;
+  char *text;
+  int flags;
 };
 /*  Flags for err_out.flags    */
-#define ERROR 1
-#define WARNING 2
-#define INTERNAL 8
-#define FATAL 16
-#define MESSAGE 32
-#define DISABLED 64
-#define NOLINE 256
+#define ERROR       1
+#define WARNING     2
+#define INTERNAL    8
+#define FATAL      16
+#define MESSAGE    32
+#define DISABLED   64
+#define NOLINE    256
 
 #endif
