@@ -15,4 +15,11 @@ LDFLAGS = -lm
 
 RM = rm -f
 
+# Add an option to compile with debug symbols
+# works with gcc and clang
+ifdef DEBUG_SYMBOLS
+COPTS+=-g
+LDFLAGS+=-g
+endif
+
 include make.rules
