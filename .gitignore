@@ -4,3 +4,9 @@ vobjdump
 
 # compiled binaries
 vasm*[!h,c]
+
+# test Asm files
+test-asm
+
+# VIM swaps
+**/*.swp
