@@ -5,6 +5,7 @@ mnemonic mnemonics[] = {
 };
 
 int mnemonic_cnt = sizeof(mnemonics) / sizeof(mnemonics[0]);
+
 char *cpu_copyright = "avr cpu backend";
 char *cpuname = "avr";
 int bitsperbyte = 8;
@@ -23,7 +24,7 @@ int init_cpu()
 operand *new_operand()
 {
   operand *new = mymalloc(sizeof(operand));
-  new->type = 0;
+  new->type = -1;
   return new;
 }
 
@@ -41,7 +42,7 @@ dblock *eval_instruction(instruction *ip, section *sec, taddr pc)
 
 size_t instruction_size(instruction *ip, section *sec, taddr pc)
 {
-  return mnemonics[ip->code].ext.length;
+  return mnemonics[ip->code].ext.size;
 }
 
 char *parse_cpu_special(char *start)
@@ -51,5 +52,5 @@ char *parse_cpu_special(char *start)
 
 int parse_operand(char *p, int len, operand *op, int required)
 {
-  return PO_MATCH;
+  return PO_NOMATCH;
 }
