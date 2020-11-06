@@ -9,7 +9,7 @@ int mnemonic_cnt = sizeof(mnemonics) / sizeof(mnemonics[0]);
 char *cpu_copyright = "avr cpu backend";
 char *cpuname = "avr";
 int bitsperbyte = 8;
-int bytesperaddr = 2;
+int bytespertaddr = 2;
 
 /* parse cpu args
  * if an arg was understood, handle it and return 1

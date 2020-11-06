@@ -8,6 +8,10 @@
 #define MAX_QUALIFIERS 0
 
 #define INST_ALIGN 1
+#define DATA_ALIGN(n) 1
+
+/* type of a data operand */
+#define DATA_OPERAND(n) 1
 
 #define MAX_QUALIFIERS 0
 
@@ -18,7 +22,9 @@ typedef int32_t taddr;
 typedef uint32_t utaddr;
 
 /* struct for storing an operand */
-typedef struct {} operand;
+typedef struct {
+        int type;
+} operand;
 
 /* struct for storing additional mnemonic info */
 typedef struct {
