@@ -6,7 +6,7 @@ trim_trailing_whitespace = true
 
 [*.{c,h}]
 indent_style = space
-indent_size = 8
+indent_size = 2
 
 [make.rules]
 indent_style = tab

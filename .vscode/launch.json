@@ -1,23 +1,47 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    // A config to launch 6502 VASM.
+    // Mostly created so I can figure out how the internals work
     "version": "0.2.0",
     "configurations": [
         {
             "name": "(gdb) debug 6502_oldstyle",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/a.out",
+            "program": "${workspaceFolder}/vasm6502_oldstyle",
             "args": [
-                "-c02",
-                "-fbin",
-                "test-asm/test6502.S"
+                "-wdc02",
+                "-Fbin",
+                "${workspaceFolder}/test-asm/test6502.S",
+                "-o",
+                "${workspaceFolder}/test-asm/a.out"
             ],
             "stopAtEntry": true,
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        // This config launches the AVR backend
+        {
+            "name": "(gdb) debug avr backend",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/vasmavr_oldstyle",
+            "args": [
+                "-Fbin",
+                "${workspaceFolder}/test-asm/testavr.S",
+                "-o",
+                "${workspaceFolder}/test-asm/avr.out",
+            ],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
             "MIMode": "gdb",
             "setupCommands": [
                 {
