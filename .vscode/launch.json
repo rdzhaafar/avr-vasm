@@ -1,10 +1,9 @@
 {
-    // A config to launch 6502 VASM.
-    // Mostly created so I can figure out how the internals work
+    // Debug 6502 backend module
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb) debug 6502_oldstyle",
+            "name": "(gdb) 6502",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/vasm6502_oldstyle",
@@ -28,9 +27,9 @@
                 }
             ]
         },
-        // This config launches the AVR backend
+        // Debug AVR backend module
         {
-            "name": "(gdb) debug avr backend",
+            "name": "(gdb) avr backend",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/vasmavr_oldstyle",
@@ -39,6 +38,29 @@
                 "${workspaceFolder}/test-asm/testavr.S",
                 "-o",
                 "${workspaceFolder}/test-asm/avr.out",
+            ],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        // Debug Intel Hex output module
+        {
+            "name": "(gdb) ihex",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/vasmavr_oldstyle",
+            "args":[
+                "-Fihex",
+                "${workspaceFolder}/test-asm/testavr.S",
+                "-o",
+                "${workspaceFolder}/test-asm/out.hex"
             ],
             "stopAtEntry": true,
             "cwd": "${workspaceFolder}",

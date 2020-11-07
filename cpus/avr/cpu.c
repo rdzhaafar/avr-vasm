@@ -24,7 +24,7 @@ int init_cpu()
 operand *new_operand()
 {
   operand *new = mymalloc(sizeof(operand));
-  new->type = -1;
+  new->type = DEFAULT;
   return new;
 }
 

@@ -1,8 +1,3 @@
-/* my editor won't shut up about unknown types */
-#include <stdint.h>
-#include <stdio.h>
-/* TODO: remove */
-
 #define BIGENDIAN 0
 #define LITTLEENDIAN 1
 
@@ -23,7 +18,7 @@ typedef int32_t taddr;
 typedef uint32_t utaddr;
 
 /* avr operand types */
-typedef enum avr_op_t {
+typedef enum {
   DEFAULT = 0,
   NONE,        /* No operand     */
   REG,         /* Register       */
@@ -40,7 +35,7 @@ typedef enum avr_op_t {
   MINUS_Z,     /* -Z             */
   Z_PLUS_Q,    /* Z+q            */
   IMM,         /* Immediate      */
-};
+} avr_op_t;
 
 typedef struct {
   avr_op_t type;

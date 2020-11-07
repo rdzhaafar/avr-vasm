@@ -4,7 +4,7 @@ CC = gcc
 TARGET =
 TARGETEXTENSION =
 OUTFMTS = -DOUTAOUT -DOUTBIN -DOUTELF -DOUTHUNK -DOUTSREC -DOUTTOS -DOUTVOBJ \
-          -DOUTXFIL
+          -DOUTXFIL -DOUTIHEX
 
 CCOUT = -o
 COPTS = -c -std=c99 -O2 -Wpedantic -DUNIX $(OUTFMTS)
@@ -15,9 +15,7 @@ LDFLAGS = -lm
 
 RM = rm -f
 
-# Add an option to compile with debug symbols
-# works with gcc and clang
-ifdef DEBUG_SYMBOLS
+ifdef DEBUG
 COPTS+=-g
 LDFLAGS+=-g
 endif

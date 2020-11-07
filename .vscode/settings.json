@@ -1,6 +1,26 @@
 {
     "files.associations": {
-        "cstdarg": "cpp",
-        "*.tcc": "cpp"
-    }
+        "make.rules": "makefile",
+        "Makefile.*": "makefile",
+        // Treat all assembly files as AVR assembly
+        "*.S": "avr",
+    },
+
+    // Define some symbols to fix code highlighting
+    "C_Cpp.default.defines": [
+        "OUTIHEX",
+        "OUTBIN",
+        "LITTLEENDIAN=1",
+        "BIGENDIAN=0",
+        "MAX_QUALIFIERS=0",
+        "INST_ALIGN=1",
+        "MAX_OPERANDS=2",
+        "VASM_CPU_AVR",
+    ],
+    "C_Cpp.default.cStandard": "c99",
+    // Stop complaining about undefined symbols
+    "C_Cpp.default.forcedInclude": [
+        "${workspaceFolder}/vasm.h",
+        "${workspaceFolder}/cpus/avr/cpu.h"
+    ]
 }
