@@ -96,7 +96,7 @@
   "dcp",  {INDIR  ,DUMY           }, {0xd3,0x00,ILL},
   "dcp",  {ABS    ,DUMX           }, {0xdf,0xd7,ILL},
   "dcp",  {ABS    ,DUMY           }, {0xdb,0x00,ILL},
-  "dea",  {IMPLIED,               }, {0x3a,0x00,M65C02},
+  "dea",  {IMPLIED,               }, {0x3a,0x00,M65C02},    
   "dec",  {ACCU   ,               }, {0x3a,0x00,M65C02},
   "dec",  {IMPLIED,               }, {0x3a,0x00,M65C02},
   "dec",  {ABS    ,               }, {0xce,0xc6,M6502},
