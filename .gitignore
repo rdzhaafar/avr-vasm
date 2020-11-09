@@ -1,12 +1,4 @@
-# all the output files go to obj
-obj/**
-vobjdump
-
-# compiled binaries
-vasm*[!h,c]
-
-# test Asm files
-test-asm
-
-# VIM swaps
-**/*.swp
+devel
+.editorconfig
+.vscode
+obj/*

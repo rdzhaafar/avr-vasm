@@ -29,8 +29,8 @@
 {"brvs",   {IMM               }, {0xf003    , 1}},
 {"bset",   {IMM               }, {0x9408    , 1}},
 {"bst",    {REG     , IMM     }, {0xfa00    , 1}},
-{"call",   {IMM               }, {0x940e0000, 2}},
-{"cbi",    {IMM     , IMM     }, {0x9800    , 1}},
+{"call",   {IMM               }, {0x940e0000, 2}}, /* using 0x_0000 instead of 0x_<<16 from here on out   */
+{"cbi",    {IMM     , IMM     }, {0x9800    , 1}}, /* gcc thinks that the latter is not a constant value  */
 {"cbr",    {REG     , IMM     }, {0x7000    , 1}},
 {"clc",    {NONE              }, {0x9488    , 1}},
 {"clh",    {NONE              }, {0x94d8    , 1}},
