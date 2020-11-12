@@ -626,8 +626,8 @@ static int init_output(char *fmt)
   }
   if(!strcmp(fmt,"cdef"))
     return init_output_cdef(&output_copyright,&write_object,&output_args);
-  if(!strcmp(fmt,"hex"))
-    return init_output_hex(&output_copyright,&write_object,&output_args);
+  if(!strcmp(fmt,"ihex"))
+    return init_output_ihex(&output_copyright,&write_object,&output_args);
   return 0;
 }
 

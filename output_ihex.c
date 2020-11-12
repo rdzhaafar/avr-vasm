@@ -1,22 +1,28 @@
 #include "vasm.h"
-#if defined(OUTHEX) && defined(VASM_CPU_650X)
+#if defined(OUTIHEX) && defined(VASM_CPU_650X)
 
-/* hex record types */
-#define HEX_DATA           0x0
-#define HEX_EOF            0x1
-#define HEX_EXT_SEG_ADDR   0x2
-#define HEX_START_SEG_ADDR 0x3
-#define HEX_EXT_LIN_ADDR   0x4
-#define HEX_START_LIN_ADDR 0x5
+/* ihex specs */
+#define I8HEX  1 /* uses record types 00 and 01                            */
+#define I16HEX 2 /* uses record types 00, 01, 02 and 03 (20-bit addresses) */
+#define I32HEX 3 /* uses record types 00, 01, 04 and 05 (32-bit addresses) */
 
-/* max and min size of a hex record (in bytes) */
-#define HEX_REC_MAX_S 0xff
-#define HEX_REC_MIN_S 0x01
+/* ihex record types */
+#define IHEX_DATA           0x0
+#define IHEX_EOF            0x1
+#define IHEX_EXT_SEG_ADDR   0x2
+#define IHEX_START_SEG_ADDR 0x3
+#define IHEX_EXT_LIN_ADDR   0x4
+#define IHEX_START_LIN_ADDR 0x5
 
-static char *copyright = "vasm hex output module 0.1 (c) 2020 Rida Dzhaafar";
+/* max and min size of an ihex record (in bytes) */
+#define IHEX_REC_MAX_S 0xff
+#define IHEX_REC_MIN_S 0x01
+
+static char *copyright = "vasm Intel HEX output module 0.1 (c) 2020 Rida Dzhaafar";
 
 static uint8_t rec_size = 10; /* default size of a data record (in bytes)  */
 static int capital_hex = 0;   /* print lowercase hex characters by default */
+static int ihex_spec = I8HEX;
 
 /* returns the size of data segment */
 static size_t data_size(section *sec)
@@ -56,6 +62,7 @@ static void write_record(FILE *f, uint8_t type, uint8_t *data, size_t size, utad
   uint8_t cs = checksum(type, data, size, addr);
   size_t i;
   char *start, *d, *end;
+
   if (capital_hex) {
     start = ":%02X%04X%02X";
     d = "%02X";
@@ -93,10 +100,10 @@ static void write_output(FILE *f, section *sec, symbol *sym)
   i = 0;
   while (i < data_s) {
     j = data_s - i > rec_size ? rec_size : data_s - i;
-    write_record(f, HEX_DATA, data + i, j, i);
+    write_record(f, IHEX_DATA, data + i, j, i);
     i += j;
   }
-  write_record(f, HEX_EOF, NULL, 0, 0);
+  write_record(f, IHEX_EOF, NULL, 0, 0);
 
   myfree(data);
 }
@@ -108,7 +115,7 @@ static int parse_args(char *p)
 
   if (strlen(p) > rcmds && !strncmp(rcmd, p, rcmds)) {
     sz = atoi(p + rcmds);
-    if (sz > HEX_REC_MAX_S || sz < HEX_REC_MIN_S)
+    if (sz > IHEX_REC_MAX_S || sz < IHEX_REC_MIN_S)
       return 0;
     rec_size = sz;
     return 1;
@@ -120,7 +127,7 @@ static int parse_args(char *p)
   return 0;
 }
 
-int init_output_hex(char **cp, void (**wo)(FILE *, section *, symbol *), int (**oa)(char *))
+int init_output_ihex(char **cp, void (**wo)(FILE *, section *, symbol *), int (**oa)(char *))
 {
   *cp = copyright;
   *wo = write_output;
@@ -130,8 +137,9 @@ int init_output_hex(char **cp, void (**wo)(FILE *, section *, symbol *), int (**
 
 #else
 
-int init_output_hex(char **cp, void (**wo)(FILE *, section *, symbol *), int (**oa)(char *))
+int init_output_ihex(char **cp, void (**wo)(FILE *, section *, symbol *), int (**oa)(char *))
 {
+  output_error(1,cpuname);
   return 0;
 }
 #endif
