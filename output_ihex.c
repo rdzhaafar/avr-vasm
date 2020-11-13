@@ -1,33 +1,21 @@
 #include "vasm.h"
-#if defined(OUTIHEX) && defined(VASM_CPU_650X)
 
-/* ihex specs */
-#define I8HEX  1 /* uses record types 00 and 01                            */
-#define I16HEX 2 /* uses record types 00, 01, 02 and 03 (20-bit addresses) */
-#define I32HEX 3 /* uses record types 00, 01, 04 and 05 (32-bit addresses) */
+#ifdef OUTIHEX
 
-/* ihex record types */
-#define IHEX_DATA           0x0
-#define IHEX_EOF            0x1
-#define IHEX_EXT_SEG_ADDR   0x2
-#define IHEX_START_SEG_ADDR 0x3
-#define IHEX_EXT_LIN_ADDR   0x4
-#define IHEX_START_LIN_ADDR 0x5
+/* ihex modes */
+#define I8HEX  0
+#define I16HEX 1
+#define I32HEX 2
 
-/* max and min size of an ihex record (in bytes) */
-#define IHEX_REC_MAX_S 0xff
-#define IHEX_REC_MIN_S 0x01
+#define MEGABYTE 1048576U
 
 static char *copyright = "vasm Intel HEX output module 0.1 (c) 2020 Rida Dzhaafar";
+/* default size of a data record in bytes */
+static uint8_t ihex_rec_sz = 10;
 
-static uint8_t rec_size = 10; /* default size of a data record (in bytes)  */
-static int capital_hex = 0;   /* print lowercase hex characters by default */
-static int ihex_spec = I8HEX;
-
-/* returns the size of data segment */
-static size_t data_size(section *sec)
+static uint32_t data_size(section *sec)
 {
-  size_t total = 0;
+  uint32_t total = 0;
   section *sect = sec;
   atom *p;
 
@@ -38,90 +26,121 @@ static size_t data_size(section *sec)
   return total;
 }
 
-/* returns the checksum of a hex record */
-static uint8_t checksum(uint8_t type, uint8_t *data, size_t size, utaddr addr)
+static void check_undefined(symbol *sym)
 {
-  size_t i;
-  uint8_t cs = 0;
+  symbol *symb;
 
-  cs += type;
-  for (i = 0; i < size; i++)
-    cs += data[i];
-  for (i = 0; i < sizeof(size_t); i++)
-    cs += size >> (8 * i);
-  for (i = 0; i < sizeof(utaddr); i++)
-    cs += addr >> (8 * i);
-  cs = ~cs;
-  cs += 1;
-  return cs;
+  for(symb=sym; symb; symb=symb->next) {
+    if (symb->type == IMPORT)
+      output_error(6,symb->name);
+  }
 }
 
-/* writes a single record to file */
-static void write_record(FILE *f, uint8_t type, uint8_t *data, size_t size, utaddr addr)
+static void check_overlapping(section *sec)
 {
-  uint8_t cs = checksum(type, data, size, addr);
-  size_t i;
-  char *start, *d, *end;
+  size_t nsecs;
+  section *s, *s2;
 
-  if (capital_hex) {
-    start = ":%02X%04X%02X";
-    d = "%02X";
-    end = "%02X\n";
-  } else {
-    start = ":%02x%04x%02x";
-    d = "%02x";
-    end = "%02x\n";
+  for (s=sec,nsecs=0; s!=NULL; s=s->next) {
+    for (s2=s->next; s2; s2=s2->next) {
+      if (((ULLTADDR(s2->org) >= ULLTADDR(s->org) &&
+            ULLTADDR(s2->org) < ULLTADDR(s->pc)) ||
+           (ULLTADDR(s2->pc) > ULLTADDR(s->org) &&
+            ULLTADDR(s2->pc) <= ULLTADDR(s->pc))))
+        output_error(0);
+    }
+    nsecs++;
   }
-  fprintf(f, start, size, addr, type);
-  for (i = 0; i < size; i++)
-    fprintf(f, d, data[i]);
-  fprintf(f, end, cs);
+}
+
+static void write_hex(FILE *f, int mode, uint8_t *data, uint32_t size)
+{
+  uint32_t done = 0;
+  uint16_t ext = 0, addr = 0, last = 0;
+  uint8_t temp, csum, rec, i;
+
+  while (done < size) {
+    rec = size - done >= ihex_rec_sz ? ihex_rec_sz : size - done;
+
+    if (last && last > addr) {
+      if (mode == I16HEX) {
+        ext += 0x0010;
+        csum = ext;
+        csum += 4; /* 02 + 00 + ... + 02 */
+        csum = ~csum + 1;
+        fprintf(f, ":02000002%04X%02X\n", ext, csum);
+      }
+      if (mode == I32HEX) {
+        ext++;
+        csum = ext + (ext >> 8);
+        csum += 6; /* 02 + 00 + ... + 04 */
+        csum = ~csum + 1;
+        fprintf(f, ":02000004%04X%02X\n", ext, csum);
+      }
+    }
+
+    fprintf(f, ":%02X%04X00", rec, addr);
+    csum = rec + (addr >> 8) + addr;
+    for (i = 0; i < rec; i++) {
+      temp = data[addr + i];
+      fprintf(f, "%02X", temp);
+      csum += temp;
+    }
+    csum = ~csum + 1;
+    fprintf(f, "%02X\n", csum);
+
+    last = addr;
+    addr += rec;
+    done += rec;
+  }
+
+  fprintf(f, ":00000001FF");
 }
 
 static void write_output(FILE *f, section *sec, symbol *sym)
 {
-  size_t data_s = data_size(sec), i, j=0;
-  uint8_t *data = mymalloc(sizeof(uint8_t) * data_s);
-  if (data == NULL)
-    general_error(17);
+  uint32_t size, i, j=0;
+  uint8_t *data;
+  int mode = I8HEX;
   atom *a;
 
-  for(; sec; sec = sec->next){
-    for(a = sec->first; a; a = a->next){
+  /* fail if checks don't pass */
+  check_undefined(sym);
+  check_overlapping(sec);
+
+  size = data_size(sec);
+  data = mymalloc(sizeof(uint8_t) * size);
+
+  for(; sec; sec = sec->next) {
+    for(a = sec->first; a; a = a->next) {
       if(a->type != DATA)
         continue;
-      for(i = 0; i < a->content.db->size; i++){
+      for(i = 0; i < a->content.db->size; i++) {
         data[j] = a->content.db->data[i];
         j++;
       }
     }
   }
 
-  i = 0;
-  while (i < data_s) {
-    j = data_s - i > rec_size ? rec_size : data_s - i;
-    write_record(f, IHEX_DATA, data + i, j, i);
-    i += j;
-  }
-  write_record(f, IHEX_EOF, NULL, 0, 0);
+  if (size > UINT8_MAX && size <= MEGABYTE)
+    mode = I16HEX;
+  else if (size > UINT8_MAX && size <= UINT32_MAX)
+    mode = I32HEX;
+
+  write_hex(f, mode, data, size);
 
   myfree(data);
 }
 
 static int parse_args(char *p)
 {
-  char *rcmd = "-record-size=";
-  size_t rcmds = strlen(rcmd), sz;
+  uint8_t sz;
 
-  if (strlen(p) > rcmds && !strncmp(rcmd, p, rcmds)) {
-    sz = atoi(p + rcmds);
-    if (sz > IHEX_REC_MAX_S || sz < IHEX_REC_MIN_S)
+  if (strlen(p) > 14 && !strncmp("-record-size=", p, 14)) {
+    sz = atoi(p + 14);
+    if (sz < 1 || sz > 255)
       return 0;
-    rec_size = sz;
-    return 1;
-  }
-  if (!strcmp("-capital-hex", p)) {
-    capital_hex = 1;
+    ihex_rec_sz = sz;
     return 1;
   }
   return 0;
@@ -129,6 +148,11 @@ static int parse_args(char *p)
 
 int init_output_ihex(char **cp, void (**wo)(FILE *, section *, symbol *), int (**oa)(char *))
 {
+  if (sizeof(utaddr) > 4 || bitsperbyte != 8){
+    output_error(1, cpuname);
+    return 0;
+  }
+
   *cp = copyright;
   *wo = write_output;
   *oa = parse_args;
@@ -136,10 +160,8 @@ int init_output_ihex(char **cp, void (**wo)(FILE *, section *, symbol *), int (*
 }
 
 #else
-
 int init_output_ihex(char **cp, void (**wo)(FILE *, section *, symbol *), int (**oa)(char *))
 {
-  output_error(1,cpuname);
   return 0;
 }
 #endif

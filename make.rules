@@ -101,7 +101,7 @@ $(PRE)output_cdef.o: output_cdef.c vasm.h symbol.h supp.h atom.h
 	$(CC) $(INCLUDES) $(COPTS) output_cdef.c $(CCOUT)$(PRE)output_cdef.o
 
 $(PRE)output_ihex.o: output_ihex.c vasm.h symbol.h supp.h atom.h
-	$(CC) $(INCLUDES) $(COPTS) output_hex.c $(CCOUT)$(PRE)output_hex.o
+	$(CC) $(INCLUDES) $(COPTS) output_ihex.c $(CCOUT)$(PRE)output_ihex.o
 
 
 $(PRE)cpu.o: cpus/$(CPU)/cpu.c cpus/$(CPU)/cpu.h syntax/$(SYNTAX)/syntax.h vasm.h symbol.h expr.h error.h supp.h reloc.h hugeint.h tfloat.h parse.h atom.h
