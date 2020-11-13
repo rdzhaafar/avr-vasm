@@ -10,3 +10,6 @@ output.
 
 This is still very much a WIP and will probably break if you try to compile it.
 You've been warned.
+
+# UPD:
+- Intel HEX module is now finished and pulled into master
