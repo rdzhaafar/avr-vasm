@@ -2,3 +2,8 @@ devel
 .editorconfig
 .vscode
 obj/*
+vasm*
+vobjdump
+!*.c
+!*.h
+!*.texi

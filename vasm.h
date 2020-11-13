@@ -332,3 +332,4 @@ int init_output_aout(char **,void (**)(FILE *,section *,symbol *),int (**)(char 
 int init_output_tos(char **,void (**)(FILE *,section *,symbol *),int (**)(char *));
 int init_output_xfile(char **,void (**)(FILE *,section *,symbol *),int (**)(char *));
 int init_output_cdef(char **,void (**)(FILE *,section *,symbol *),int (**)(char *));
+int init_output_ihex(char **,void (**)(FILE *,section *,symbol *),int (**)(char *));
