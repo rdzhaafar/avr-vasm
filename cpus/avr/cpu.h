@@ -37,12 +37,6 @@ typedef uint16_t utaddr;
 #define  IMM      14 /* Immediate      */
 
 typedef struct {
-  uint32_t lsb_p; /* least significant bit position */
-  uint16_t max;
-  uint16_t min;
-} opcode_variable;
-
-typedef struct {
   int type;
   expr *val;
 } operand;
@@ -50,7 +44,9 @@ typedef struct {
 typedef struct {
   uint32_t opcode;
   size_t size;
-  opcode_variable variables[MAX_OPERANDS];
+  dblock (**opcode_gen)(instruction *);
+  int (*range_chk_fst)(instruction *);
+  int (*range_chk_snd)(instruction *);
 } mnemonic_extension;
 
 int avr_mnemonic_valid(int);

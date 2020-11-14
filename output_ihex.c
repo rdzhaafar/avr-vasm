@@ -38,10 +38,9 @@ static void check_undefined(symbol *sym)
 
 static void check_overlapping(section *sec)
 {
-  size_t nsecs;
   section *s, *s2;
 
-  for (s=sec,nsecs=0; s!=NULL; s=s->next) {
+  for (s=sec; s!=NULL; s=s->next) {
     for (s2=s->next; s2; s2=s2->next) {
       if (((ULLTADDR(s2->org) >= ULLTADDR(s->org) &&
             ULLTADDR(s2->org) < ULLTADDR(s->pc)) ||
@@ -49,7 +48,6 @@ static void check_overlapping(section *sec)
             ULLTADDR(s2->pc) <= ULLTADDR(s->pc))))
         output_error(0);
     }
-    nsecs++;
   }
 }
 
@@ -111,11 +109,11 @@ static void write_output(FILE *f, section *sec, symbol *sym)
   size = data_size(sec);
   data = mymalloc(sizeof(uint8_t) * size);
 
-  for(; sec; sec = sec->next) {
-    for(a = sec->first; a; a = a->next) {
-      if(a->type != DATA)
+  for (; sec; sec = sec->next) {
+    for (a = sec->first; a; a = a->next) {
+      if (a->type != DATA)
         continue;
-      for(i = 0; i < a->content.db->size; i++) {
+      for (i = 0; i < a->content.db->size; i++) {
         data[j] = a->content.db->data[i];
         j++;
       }
@@ -136,8 +134,8 @@ static int parse_args(char *p)
 {
   uint8_t sz;
 
-  if (strlen(p) > 14 && !strncmp("-record-size=", p, 14)) {
-    sz = atoi(p + 14);
+  if (strlen(p) > 13 && !strncmp("-record-size=", p, 13)) {
+    sz = atoi(p + 13);
     if (sz < 1 || sz > 255)
       return 0;
     ihex_rec_sz = sz;
