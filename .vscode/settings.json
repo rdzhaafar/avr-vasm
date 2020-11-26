@@ -1,0 +1,31 @@
+{
+    "files.associations": {
+        "make.rules": "makefile",
+        "Makefile.*": "makefile",
+        "*.S": "avr",
+        "type_traits": "c",
+        "atomic": "c",
+        "cstdint": "c"
+    },
+
+    // Define some symbols to fix code highlighting
+    "C_Cpp.default.defines": [
+        "LITTLEENDIAN=1",
+        "BIGENDIAN=0",
+        "MAX_OPERANDS=2",
+        "MAX_QUALIFIERS=0",
+        "INST_ALIGN=1",
+        "OUTIHEX=1",
+        "OUTBIN=1",
+        "OUTSREC=1"
+    ],
+    "C_Cpp.default.cStandard": "c99",
+    // Stop complaining about undefined symbols
+    // It worked. But partially. WTF?
+    "C_Cpp.default.forcedInclude": [
+        "${workspaceRoot}/vasm.h",
+        "${workspaceRoot}/cpus/avr/cpu.h",
+        "${workspaceRoot}/cpus/avr/opcode_gen.h",
+        "${workspaceRoot}/cpus/avr/opcodes.h"
+    ]
+}

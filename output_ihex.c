@@ -2,143 +2,122 @@
 
 #ifdef OUTIHEX
 
-/* ihex modes */
-#define I8HEX  0
-#define I16HEX 1
-#define I32HEX 2
+/* IHEX modes */
+#define I8HEX  0 /* 16-bit address space */
+#define I16HEX 1 /* 20-bit address space */
+#define I32HEX 2 /* 32-bit address space */
 
-#define MEGABYTE 1048576U
+/* Maximum address covered by I16HEX */
+#define MEGABYTE (1 << 20)
+
+/* IHEX record types */
+#define REC_DAT 0 /* data */
+#define REC_EOF 1 /* end of file */
+#define REC_ESA 2 /* extended segment address */
+#define REC_SSA 3 /* start segment address */
+#define REC_ELA 4 /* extended linear address */
+#define REC_SLA 5 /* start linear address */
 
 static char *copyright = "vasm Intel HEX output module 0.1 (c) 2020 Rida Dzhaafar";
-/* default size of a data record in bytes */
-static uint8_t ihex_rec_sz = 10;
 
-static uint32_t data_size(section *sec)
+static int ihex_mode;
+static int mode_set = 0; /* set to 1 if user specified the mode */
+
+/* output buffer globals */
+static uint8_t *buffer;       /* output buffer */
+static size_t buffer_s = 10;  /* output buffer size */
+static size_t buffer_idx = 0; /* current position in the buffer */
+
+static void write_record(FILE *f, uint8_t type)
+/* write record of TYPE to file */
 {
-  uint32_t total = 0;
-  section *sect = sec;
-  atom *p;
+  uint8_t csum;
+  csum += type;
 
-  for (; sect; sect = sect->next)
-    for (p = sect->first; p; p = p->next)
-      if (p->type == DATA)
-        total += p->content.db->size;
-  return total;
-}
-
-static void check_undefined(symbol *sym)
-{
-  symbol *symb;
-
-  for(symb=sym; symb; symb=symb->next) {
-    if (symb->type == IMPORT)
-      output_error(6,symb->name);
+  switch (type) {
   }
 }
 
-static void check_overlapping(section *sec)
+static void output_data(FILE *f, uint8_t byte)
+/* stores the ouput byte in buffer and flushes the buffer if necessary */
 {
-  section *s, *s2;
+  buffer[buffer_idx] = byte;
+  buffer_idx++;
 
-  for (s=sec; s!=NULL; s=s->next) {
-    for (s2=s->next; s2; s2=s2->next) {
-      if (((ULLTADDR(s2->org) >= ULLTADDR(s->org) &&
-            ULLTADDR(s2->org) < ULLTADDR(s->pc)) ||
-           (ULLTADDR(s2->pc) > ULLTADDR(s->org) &&
-            ULLTADDR(s2->pc) <= ULLTADDR(s->pc))))
-        output_error(0);
-    }
-  }
+  if (buffer_idx == buffer_s)
+    write_record(f, REC_DAT);
 }
 
-static void write_hex(FILE *f, int mode, uint8_t *data, uint32_t size)
+static void detect_mode(section *sec)
+/* try to detect what IHEX mode do we need to use based
+   on the size of the output generated */
 {
-  uint32_t done = 0;
-  uint16_t ext = 0, addr = 0, last = 0;
-  uint8_t temp, csum, rec, i;
+  section *s;
+  atom *a;
+  utaddr i, pc = 0, max = 0;
 
-  while (done < size) {
-    rec = size - done >= ihex_rec_sz ? ihex_rec_sz : size - done;
-
-    if (last && last > addr) {
-      if (mode == I16HEX) {
-        ext += 0x0010;
-        csum = ext;
-        csum += 4; /* 02 + 00 + ... + 02 */
-        csum = ~csum + 1;
-        fprintf(f, ":02000002%04X%02X\n", ext, csum);
-      }
-      if (mode == I32HEX) {
-        ext++;
-        csum = ext + (ext >> 8);
-        csum += 6; /* 02 + 00 + ... + 04 */
-        csum = ~csum + 1;
-        fprintf(f, ":02000004%04X%02X\n", ext, csum);
+  /* search for the biggest address reached */
+  for (s = sec; s; s = s->next) {
+    pc = sec->org;
+    for (a = s->first; a; a = a->next) {
+      if (a->type == DATA)
+        pc += a->content.db->size;
+      else if (a->type == SPACE) {
+        pc += a->content.sb->size;
       }
     }
-
-    fprintf(f, ":%02X%04X00", rec, addr);
-    csum = rec + (addr >> 8) + addr;
-    for (i = 0; i < rec; i++) {
-      temp = data[addr + i];
-      fprintf(f, "%02X", temp);
-      csum += temp;
-    }
-    csum = ~csum + 1;
-    fprintf(f, "%02X\n", csum);
-
-    last = addr;
-    addr += rec;
-    done += rec;
+    max = pc > max ? pc : max;
   }
 
-  fprintf(f, ":00000001FF");
+  if (max <= UINT16_MAX)
+    ihex_mode = I8HEX;
+  else if (max <= MEGABYTE)
+    ihex_mode = I16HEX;
+  else
+    ihex_mode = I32HEX;
 }
 
 static void write_output(FILE *f, section *sec, symbol *sym)
 {
-  uint32_t size, i, j=0;
-  uint8_t *data;
-  int mode = I8HEX;
-  atom *a;
+  utaddr i, j;
+  atom *ap;
+  section *sp;
 
-  /* fail if checks don't pass */
-  check_undefined(sym);
-  check_overlapping(sec);
+  if (!sec)
+    return;
 
-  size = data_size(sec);
-  data = mymalloc(sizeof(uint8_t) * size);
+  if (!mode_set)
+    detect_mode(sec);
 
-  for (; sec; sec = sec->next) {
-    for (a = sec->first; a; a = a->next) {
-      if (a->type != DATA)
-        continue;
-      for (i = 0; i < a->content.db->size; i++) {
-        data[j] = a->content.db->data[i];
-        j++;
-      }
-    }
-  }
-
-  if (size > UINT8_MAX && size <= MEGABYTE)
-    mode = I16HEX;
-  else if (size > UINT8_MAX && size <= UINT32_MAX)
-    mode = I32HEX;
-
-  write_hex(f, mode, data, size);
-
-  myfree(data);
+  for (; sym; sym = sym->next)
+    if (sym->type == IMPORT)
+      output_error(6, sym->name); /* undefined symbol sym->name */
 }
 
-static int parse_args(char *p)
+static int parse_args(char *arg)
 {
-  uint8_t sz;
-
-  if (strlen(p) > 13 && !strncmp("-record-size=", p, 13)) {
-    sz = atoi(p + 13);
-    if (sz < 1 || sz > 255)
+  size_t size;
+  if (!strcmp(arg, "-i8hex")) {
+    ihex_mode = I8HEX;
+    mode_set = 1;
+    return 1;
+  }
+  if (!strcmp(arg, "-i16hex")) {
+    ihex_mode = I16HEX;
+    mode_set = 1;
+    return 1;
+  }
+  if (!strcmp(arg, "-i32hex")) {
+    ihex_mode = I32HEX;
+    mode_set = 1;
+    return 1;
+  }
+  if (!strncmp(arg, "-record-size=", 13)) {
+    size = atoi(arg + 13);
+    /* an IHEX record cannot be bigger than 0xff bytes in size */
+    if (size < 1 || size > 255)
       return 0;
-    ihex_rec_sz = sz;
+    buffer_s = size;
     return 1;
   }
   return 0;
@@ -146,8 +125,8 @@ static int parse_args(char *p)
 
 int init_output_ihex(char **cp, void (**wo)(FILE *, section *, symbol *), int (**oa)(char *))
 {
-  if (sizeof(utaddr) > 4 || bitsperbyte != 8){
-    output_error(1, cpuname);
+  if (sizeof(utaddr) > 4 || bitsperbyte != 8) {
+    output_error(1, cpuname); /* output module doesn't support cpuname */
     return 0;
   }
 

@@ -7,11 +7,13 @@ OUTFMTS = -DOUTAOUT -DOUTBIN -DOUTELF -DOUTHUNK -DOUTSREC -DOUTTOS -DOUTVOBJ \
           -DOUTXFIL -DOUTIHEX
 
 CCOUT = -o
-COPTS = -c -std=c99 -O2 -Wpedantic -DUNIX $(OUTFMTS)
+# TODO: remove -g, bring back -O2
+COPTS = -c -std=c99 -g -Wpedantic -DUNIX $(OUTFMTS)
 
 LD = $(CC)
 LDOUT = $(CCOUT)
-LDFLAGS = -lm
+# TODO: remove -g
+LDFLAGS = -g -lm
 
 RM = rm -f
 

@@ -1,3 +1,10 @@
+/* operands.h
+  functions to generate complex AVR
+  instructions from opcodes
+*/
+
+#define BIT(n) (uint32_t)(1 << n)
+
 /*
 1)
 ____ __rd dddd rrrr
@@ -15,6 +22,22 @@ and:  0 < d < 31, 0 < r < 31
 add:  0 < d < 31, 0 < r < 31
 adc:  0 < d < 31, 0 < r < 31
 */
+static uint32_t two_reg(instruction *ip, uint32_t opc)
+{
+  int r, d;
+  r = ip->op[0]->val.c.val;
+  d = ip->op[1]->val.c.val;
+
+  if (r < 0 || r > 31 || d < 0 || d > 31)
+    cpu_error(0); /* op value out of range */
+
+  if (r & BIT(9))
+    opc |= (r & BIT(9));
+  opc |= (r << 4);
+  opc |= r;
+
+  return opc;
+}
 
 /*
 2)
@@ -22,6 +45,27 @@ ____ ____ KKdd KKKK
 sbiw: d{24,26,28,30}, 0 < K < 63
 adiw: d{24,26,28,30}, 0 < K < 63
 */
+static uint32_t word_imm(instruction *ip, uint32_t opc)
+{
+  int d, k;
+  d = ip->op[0]->val.c.val;
+  k = ip->op[0]->val.c.val;
+
+  if (d != 24 && d != 26 && d != 28 && d != 30)
+    cpu_error(0); /* op value out of range */
+  if (k < 0 || k > 63)
+    cpu_error(0);
+
+  if (k & BIT(7))
+    opc |= BIT(7);
+  if (k & BIT(6))
+    opc |= BIT(6);
+  opc |= k & 0x000f;
+  d -= 24; /* TODO: check if this is correct */
+  opc |= d << 4;
+
+  return opc;
+}
 
 /*
 3)
@@ -34,6 +78,22 @@ ldi:   16 < d < 31, 0 < K < 255
 cpi:   16 < d < 31, 0 < K < 255
 andi:  16 < d < 31, 0 < K < 255
 */
+
+static uint32_t hireg_imm(instruction *ip, uint32_t opc)
+{
+  int d, k;
+  d = ip->op[0]->val.c.val;
+  k = ip->op[1]->val.c.val;
+
+  if (d < 16 || d > 31 || k < 0 || k > 255)
+    cpu_error(0); /* op value out of range */
+
+  opc |= (k << 8) & 0x0f00;
+  opc |= k & 0x000f;
+  opc |= d << 4;
+
+  return opc;
+}
 
 /*
 4)
@@ -73,6 +133,11 @@ elpm(Rd, Z+): 0 < d < 31
 dec:          0 < d < 31
 asr:          0 < d < 31
 */
+static uint32_t one_reg(instruction *ip, uint32_t opc)
+{
+  int d;
+  d = ip->op[0]->value.c.val;
+}
 
 /*
 5)

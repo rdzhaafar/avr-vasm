@@ -45,8 +45,6 @@ typedef struct {
   uint32_t opcode;
   size_t size;
   dblock (**opcode_gen)(instruction *);
-  int (*range_chk_fst)(instruction *);
-  int (*range_chk_snd)(instruction *);
 } mnemonic_extension;
 
 int avr_mnemonic_valid(int);

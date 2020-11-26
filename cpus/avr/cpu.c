@@ -2,6 +2,7 @@
  * (c) in 2020 by Rida Dzhaafar
  */
 #include "vasm.h"
+#include "operands.h"
 
 mnemonic mnemonics[] = {
 #include "opcodes.h"

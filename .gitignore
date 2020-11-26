@@ -1,9 +1,12 @@
-devel
-.editorconfig
-.vscode
+# Generated object files/binaries
 obj/*
 vasm*
 vobjdump
 !*.c
 !*.h
 !*.texi
+
+# test files
+*.S
+*.s
+a.out
