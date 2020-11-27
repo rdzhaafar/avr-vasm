@@ -7,6 +7,8 @@
 #define I16HEX 1 /* supports 20-bit address space */
 #define I32HEX 2 /* supports 32-bit address space */
 
+#define MEGABYTE 1 << 20
+
 /* ihex record types */
 #define REC_DAT 0 /* data */
 #define REC_EOF 1 /* end of file */
@@ -17,7 +19,7 @@
 
 static char *copyright = "vasm Intel HEX output module 0.1 (c) 2020 Rida Dzhaafar";
 
-static int ihex_fmt = I32HEX; /* default ihex format */
+static int ihex_fmt = I8HEX; /* default ihex format */
 
 static uint8_t *buffer;       /* output buffer for data records */
 static uint8_t buffer_s = 10; /* maximum buffer size */
@@ -37,15 +39,21 @@ static void write_extended_record(FILE *f)
   uint16_t ext;
   uint8_t type;
 
-  if (!ihex_fmt)
-    return;
-
-  if (ihex_fmt == I16HEX) {
-    ext = ext_addr << 4;
-    type = REC_ESA;
-  } else {
-    ext = ext_addr;
-    type = REC_ELA;
+  switch (ihex_fmt) {
+    case I8HEX:
+      output_error(11, addr);
+      return;
+    case I16HEX:
+      if (addr > MEGABYTE) {
+        output_error(11, addr);
+        return;
+      }
+      ext = ext_addr << 4;
+      type = REC_ESA;
+      break;
+    case I32HEX:
+      ext = ext_addr;
+      type = REC_ELA;
   }
 
   csum = type;
@@ -149,7 +157,7 @@ static void write_output(FILE *f, section *sec, symbol *sym)
 
   for (; sym; sym = sym->next)
     if (sym->type == IMPORT)
-      output_error(6, sym->name); /* undefined symbol sym->name */
+      output_error(6, sym->name); /* undefined symbol (sym->name) */
 
   buffer = mymalloc(sizeof(uint8_t) * buffer_s);
 
@@ -208,7 +216,7 @@ static int parse_args(char *arg)
 int init_output_ihex(char **cp, void (**wo)(FILE *, section *, symbol *), int (**oa)(char *))
 {
   if (sizeof(utaddr) > sizeof(uint32_t) || bitsperbyte != 8) {
-    output_error(1, cpuname); /* output module doesn't support cpuname */
+    output_error(1, cpuname); /* output module doesn't support (cpuname) */
     return 0;
   }
   *cp = copyright;
