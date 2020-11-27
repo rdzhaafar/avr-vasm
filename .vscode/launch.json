@@ -11,7 +11,8 @@
                 "-o",
                 "a.out",
                 "-debug",
-                "-i16hex"
+                "-i16hex",
+                "-record-size=5"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
