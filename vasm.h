@@ -136,7 +136,7 @@ struct source {
 #define LABELS_ARE_LOCAL (1<<3)
 #define ABSOLUTE         (1<<4)
 #define PREVABS          (1<<5) /* saved ABSOLUTE-flag during RORG-block */
-#define IN_RORG          (1<<6)
+#define IN_RORG          (1<<6)       
 #define NEAR_ADDRESSING  (1<<7)
 #define SECRSRVD       (1L<<24) /* bits 24-31 are reserved for output modules */
 

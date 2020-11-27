@@ -10,7 +10,7 @@ OBJS = $(PRE)vasm.o $(PRE)atom.o $(PRE)expr.o $(PRE)symtab.o $(PRE)symbol.o \
 
 VODOBJS = obj$(TARGET)/vobjdump.o
 
-INCLUDES = -I. -Icpus/$(CPU) -Isyntax/$(SYNTAX)
+INCLUDES = -I. -Icpus/$(CPU) -Isyntax/$(SYNTAX) 
 
 VASMEXE = vasm$(CPU)_$(SYNTAX)$(TARGET)$(TARGETEXTENSION)
 VOBJDMPEXE = vobjdump$(TARGET)$(TARGETEXTENSION)
@@ -102,7 +102,6 @@ $(PRE)output_cdef.o: output_cdef.c vasm.h symbol.h supp.h atom.h
 
 $(PRE)output_ihex.o: output_ihex.c vasm.h symbol.h supp.h atom.h
 	$(CC) $(INCLUDES) $(COPTS) output_ihex.c $(CCOUT)$(PRE)output_ihex.o
-
 
 $(PRE)cpu.o: cpus/$(CPU)/cpu.c cpus/$(CPU)/cpu.h syntax/$(SYNTAX)/syntax.h vasm.h symbol.h expr.h error.h supp.h reloc.h hugeint.h tfloat.h parse.h atom.h
 	$(CC) $(INCLUDES) $(COPTS) cpus/$(CPU)/cpu.c $(CCOUT)$(PRE)cpu.o

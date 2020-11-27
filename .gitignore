@@ -10,3 +10,6 @@ vobjdump
 *.S
 *.s
 a.out
+
+# editor settings
+.vscode

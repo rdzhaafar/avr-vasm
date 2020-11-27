@@ -2,18 +2,16 @@
 
 CC = gcc
 TARGET =
-TARGETEXTENSION =
+TARGETEXTENSION = 
 OUTFMTS = -DOUTAOUT -DOUTBIN -DOUTELF -DOUTHUNK -DOUTSREC -DOUTTOS -DOUTVOBJ \
           -DOUTXFIL -DOUTIHEX
 
-CCOUT = -o
-# TODO: remove -g, bring back -O2
-COPTS = -c -std=c99 -g -Wpedantic -DUNIX $(OUTFMTS)
+CCOUT = -o 
+COPTS = -c -std=c99 -O2 -Wpedantic -DUNIX $(OUTFMTS)
 
 LD = $(CC)
 LDOUT = $(CCOUT)
-# TODO: remove -g
-LDFLAGS = -g -lm
+LDFLAGS = -lm
 
 RM = rm -f
 
