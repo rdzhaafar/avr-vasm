@@ -1,16 +1,17 @@
 {
     "configurations": [
         {
-            "name": "SREC",
+            "name": "IHEX output",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/vasm6502_oldstyle",
+            "program": "${workspaceFolder}/vasm6502_std",
             "args": [
-                "devel/test_srec.S",
-                "-Fsrec",
+                "test.s",
+                "-Fihex",
                 "-o",
-                "devel/test.srec",
-                "-dotdir"
+                "a.out",
+                "-debug",
+                "-i16hex"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -23,58 +24,33 @@
                     "text": "-enable-pretty-printing",
                     "ignoreFailures": true
                 }
-            ],
+            ]
         },
-    {
-        "name": "ihex",
-        "type": "cppdbg",
-        "request": "launch",
-        "program": "${workspaceFolder}/vasm6502_oldstyle",
-        "args": [
-            "devel/hello-world-final.s",
-            "-Fihex",
-            "-c02",
-            "-o",
-            "devel/hello-world-final.hex",
-            "-dotdir"
-        ],
-        "stopAtEntry": false,
-        "cwd": "${workspaceFolder}",
-        "environment": [],
-        "externalConsole": false,
-        "MIMode": "gdb",
-        "setupCommands": [
-            {
-                "description": "Enable pretty-printing for gdb",
-                "text": "-enable-pretty-printing",
-                "ignoreFailures": true
-            }
-        ]
-    },
-    {
-        "name": "avr-parse-operand",
-        "type": "cppdbg",
-        "request": "launch",
-        "program": "${workspaceFolder}/vasmavr_oldstyle",
-        "args": [
-            "${workspaceFolder}/devel/avr-test-parser.S",
-            "-o",
-            "${workspaceFolder}/devel/avr-test-parser.out",
-            "-Fbin"
-        ],
-        "stopAtEntry": true,
-        "cwd": "${workspaceFolder}",
-        "environment": [],
-        "externalConsole": false,
-        "MIMode": "gdb",
-        "setupCommands": [
-            {
-                "description": "Enable pretty-printing for gdb",
-                "text": "-enable-pretty-printing",
-                "ignoreFailures": true
-            }
-        ]
-    }
+        {
+            "name": "Test output",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/vasm6502_std",
+            "args": [
+                "test.s",
+                "-Ftest",
+                "-o",
+                "a.out",
+                "-debug"
+            ],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
     ]
 
 }

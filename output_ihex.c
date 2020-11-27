@@ -2,96 +2,170 @@
 
 #ifdef OUTIHEX
 
-/* IHEX modes */
-#define I8HEX  0 /* 16-bit address space */
-#define I16HEX 1 /* 20-bit address space */
-#define I32HEX 2 /* 32-bit address space */
+#define I8HEX  0
+#define I16HEX 1
+#define I32HEX 2
 
-/* Maximum address covered by I16HEX */
-#define MEGABYTE (1 << 20)
-
-/* IHEX record types */
-#define REC_DAT 0 /* data */
-#define REC_EOF 1 /* end of file */
-#define REC_ESA 2 /* extended segment address */
-#define REC_SSA 3 /* start segment address */
-#define REC_ELA 4 /* extended linear address */
-#define REC_SLA 5 /* start linear address */
+#define REC_DAT 0 
+#define REC_EOF 1 
+#define REC_ESA 2 
+#define REC_SSA 3 
+#define REC_ELA 4 
+#define REC_SLA 5
 
 static char *copyright = "vasm Intel HEX output module 0.1 (c) 2020 Rida Dzhaafar";
 
-static int ihex_mode;
-static int mode_set = 0; /* set to 1 if user specified the mode */
+static int ihex_mode = I8HEX;
 
-/* output buffer globals */
-static uint8_t *buffer;       /* output buffer */
-static size_t buffer_s = 10;  /* output buffer size */
-static size_t buffer_idx = 0; /* current position in the buffer */
+static uint8_t *buffer;       
+static uint8_t buffer_s = 10;  
+static uint8_t buffer_i = 0;
+
+static uint32_t pos = 0;
+static uint16_t last_ext = 0; /* last written extended segment/linear address */
 
 static void write_record(FILE *f, uint8_t type)
-/* write record of TYPE to file */
 {
-  uint8_t csum;
-  csum += type;
+  uint8_t csum = type;
+  uint8_t i;
+  uint16_t ext;
+  uint32_t start;
 
   switch (type) {
-  }
-}
+    /* data record (00) */
+    case REC_DAT:
 
-static void output_data(FILE *f, uint8_t byte)
-/* stores the ouput byte in buffer and flushes the buffer if necessary */
-{
-  buffer[buffer_idx] = byte;
-  buffer_idx++;
-
-  if (buffer_idx == buffer_s)
-    write_record(f, REC_DAT);
-}
-
-static void detect_mode(section *sec)
-/* try to detect what IHEX mode do we need to use based
-   on the size of the output generated */
-{
-  section *s;
-  atom *a;
-  utaddr i, pc = 0, max = 0;
-
-  /* search for the biggest address reached */
-  for (s = sec; s; s = s->next) {
-    pc = sec->org;
-    for (a = s->first; a; a = a->next) {
-      if (a->type == DATA)
-        pc += a->content.db->size;
-      else if (a->type == SPACE) {
-        pc += a->content.sb->size;
+      start = (pos - (buffer_i - 1));
+      ext = start >> 16;
+      
+      if (ext != last_ext) {
+        last_ext = ext;
+        if (ihex_mode == I16HEX)
+          write_record(f, REC_ESA);
+        else
+          write_record(f, REC_ELA);
       }
-    }
-    max = pc > max ? pc : max;
+      
+      fprintf(f, ":%02X%04X00", buffer_i, start);
+      csum += start;
+      csum += (start & 0xFF00) >> 16;
+      csum += buffer_i;
+      for (i = 0; i < buffer_i; i++) {
+        fprintf(f, "%02X", buffer[i]);
+        csum += buffer[i];
+      }
+      csum = (~csum) + 1;
+      fprintf(f, "%02X\n", csum);
+
+      break; /* DONE */
+    
+    /* end-of-file record (01) */
+    case REC_EOF:
+      fprintf(f, ":00000001FF");
+      break;
+    
+    /* extended segment address record (02) */
+    case REC_ESA:
+      ext = last_ext << 12;
+      csum += 2;
+      csum += ext >> 16;
+      csum += ext;
+      fprintf(f, ":02000002%04X%02X\n", ext, csum);
+      break;
+    
+    /* extended linear address record (04) */
+    case REC_ELA:
+      ext = last_ext;
+      csum += 4;
+      csum += ext >> 16;
+      csum += ext;
+      fprintf(f, ":02000004%04X%02X\n", ext, csum);
+  }
+}
+
+static void buffer_data(FILE *f, uint8_t b)
+{
+  buffer[buffer_i] = b;
+  buffer_i++;
+  pos++;
+  
+  if (buffer_i == buffer_s) {
+    write_record(f, REC_DAT);
+    buffer_i = 0;
+  }
+}
+
+static void align(FILE *f, section *sec, atom *a)
+{
+  uint32_t align = balign(pos, a->align);
+  int i;
+  uint32_t len;
+  uint8_t *pad;
+
+  if (align == 0)
+    return;
+
+  if (a->type == SPACE && !a->content.sb->space) {
+    if (a->content.sb->maxalignbytes != 0 &&
+        align > a->content.sb->maxalignbytes)
+      return;
+    pad = a->content.sb->fill;
+    len = a->content.sb->size;
+  } else {
+    pad = sec->pad;
+    len = sec->padbytes;
   }
 
-  if (max <= UINT16_MAX)
-    ihex_mode = I8HEX;
-  else if (max <= MEGABYTE)
-    ihex_mode = I16HEX;
-  else
-    ihex_mode = I32HEX;
+  while (align % len) {
+    buffer_data(f, 0);
+    align--;
+  }
+
+  while (align >= len) {
+    for(i = 0; i < len; i++) {
+      buffer_data(f, pad[i]);
+      align--;
+    }
+  }
+
+  while (len--)
+    buffer_data(f, 0);
 }
 
 static void write_output(FILE *f, section *sec, symbol *sym)
 {
-  utaddr i, j;
+  uint32_t i, j;
   atom *ap;
   section *sp;
 
   if (!sec)
     return;
-
-  if (!mode_set)
-    detect_mode(sec);
+  
+  buffer = mymalloc(sizeof(uint8_t) * buffer_s);
 
   for (; sym; sym = sym->next)
     if (sym->type == IMPORT)
       output_error(6, sym->name); /* undefined symbol sym->name */
+
+  for (sp = sec; sp; sp = sp->next) {
+    pos = ULLTADDR(sp->org);
+    for (ap = sp->first; ap; ap = ap->next) {
+      align(f, sp, ap);
+      if (ap->type == DATA) {
+        for (i = 0; i < ap->content.db->size; i++)
+          buffer_data(f, ap->content.db->data[i]);
+      } else if (ap->type == SPACE) {
+        for (i = 0; i < ap->content.sb->space; i++)
+          for (j = 0; j < ap->content.sb->size; j++)
+            buffer_data(f, ap->content.sb->fill[j]);
+      }
+    }
+    write_record(f, REC_DAT); /* flush the buffer */
+  }
+
+  write_record(f, REC_EOF);
+  
+  myfree(buffer);
 }
 
 static int parse_args(char *arg)
@@ -99,20 +173,17 @@ static int parse_args(char *arg)
   size_t size;
   if (!strcmp(arg, "-i8hex")) {
     ihex_mode = I8HEX;
-    mode_set = 1;
     return 1;
   }
-  if (!strcmp(arg, "-i16hex")) {
+  else if (!strcmp(arg, "-i16hex")) {
     ihex_mode = I16HEX;
-    mode_set = 1;
     return 1;
   }
-  if (!strcmp(arg, "-i32hex")) {
+  else if (!strcmp(arg, "-i32hex")) {
     ihex_mode = I32HEX;
-    mode_set = 1;
     return 1;
   }
-  if (!strncmp(arg, "-record-size=", 13)) {
+  else if (!strncmp(arg, "-record-size=", 13)) {
     size = atoi(arg + 13);
     /* an IHEX record cannot be bigger than 0xff bytes in size */
     if (size < 1 || size > 255)
@@ -125,7 +196,7 @@ static int parse_args(char *arg)
 
 int init_output_ihex(char **cp, void (**wo)(FILE *, section *, symbol *), int (**oa)(char *))
 {
-  if (sizeof(utaddr) > 4 || bitsperbyte != 8) {
+  if (sizeof(utaddr) > sizeof(uint32_t) || bitsperbyte != 8) {
     output_error(1, cpuname); /* output module doesn't support cpuname */
     return 0;
   }
