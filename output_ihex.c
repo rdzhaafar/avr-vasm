@@ -7,6 +7,7 @@
 #define I16HEX 1 /* supports 20-bit address space */
 #define I32HEX 2 /* supports 32-bit address space */
 
+/* maximum address for I16HEX */
 #define MEGABYTE 1 << 20
 
 /* ihex record types */
@@ -44,7 +45,7 @@ static void write_extended_record(FILE *f)
       output_error(11, addr);
       return;
     case I16HEX:
-      if (addr > MEGABYTE) {
+      if (addr >= MEGABYTE) {
         output_error(11, addr);
         return;
       }
@@ -108,6 +109,8 @@ static void buffer_data(FILE *f, uint8_t b)
     write_data_record(f);
 }
 
+/* align the atom if necessary
+   adapted from output_srec.c */
 static void align(FILE *f, section *sec, atom *a)
 {
   uint32_t align = balign(addr, a->align);
@@ -150,7 +153,7 @@ static void write_output(FILE *f, section *sec, symbol *sym)
 {
   uint32_t i, j;
   atom *a;
-  section *s;
+  section *s, *s2;
 
   if (!sec)
     return;
@@ -158,6 +161,18 @@ static void write_output(FILE *f, section *sec, symbol *sym)
   for (; sym; sym = sym->next)
     if (sym->type == IMPORT)
       output_error(6, sym->name); /* undefined symbol (sym->name) */
+  
+  /* fail on overlapping sections
+     adapted from output_bin.c */
+  for (s = sec; s != NULL; s = s->next) {
+    for (s2 = s->next; s2; s2 = s2->next) {
+      if (((ULLTADDR(s2->org) >= ULLTADDR(s->org) &&
+            ULLTADDR(s2->org) < ULLTADDR(s->pc)) ||
+           (ULLTADDR(s2->pc) > ULLTADDR(s->org) &&
+            ULLTADDR(s2->pc) <= ULLTADDR(s->pc))))
+        output_error(0);
+    }
+  }
 
   buffer = mymalloc(sizeof(uint8_t) * buffer_s);
 
@@ -189,7 +204,8 @@ static void write_output(FILE *f, section *sec, symbol *sym)
 
 static int parse_args(char *arg)
 {
-  size_t size;
+  uint8_t size;
+
   if (!strcmp(arg, "-i8hex")) {
     ihex_fmt = I8HEX;
     return 1;
@@ -219,6 +235,7 @@ int init_output_ihex(char **cp, void (**wo)(FILE *, section *, symbol *), int (*
     output_error(1, cpuname); /* output module doesn't support (cpuname) */
     return 0;
   }
+  
   *cp = copyright;
   *wo = write_output;
   *oa = parse_args;

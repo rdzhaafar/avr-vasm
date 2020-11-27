@@ -5,7 +5,8 @@
         "*.S": "avr",
         "type_traits": "c",
         "atomic": "c",
-        "cstdint": "c"
+        "cstdint": "c",
+        "a.out": "hex"
     },
 
     // Define some symbols to fix code highlighting
