@@ -25,18 +25,19 @@ static uint32_t pos = 0;
 static uint16_t last_ext = 0; /* last written extended segment/linear address */
 
 static void write_record(FILE *f, uint8_t type)
+/* write an ihex record of TYPE to the file */
 {
   uint8_t csum = type;
   uint8_t i;
-  uint16_t ext;
   uint32_t start;
+  uint16_t ext;
 
   switch (type) {
-    /* data record (00) */
-    case REC_DAT:
 
-      start = (pos - (buffer_i - 1));
+    case REC_DAT:
+      start = pos - buffer_i - 1;
       ext = start >> 16;
+      start &= 0xFFFF;
       
       if (ext != last_ext) {
         last_ext = ext;
@@ -45,45 +46,44 @@ static void write_record(FILE *f, uint8_t type)
         else
           write_record(f, REC_ELA);
       }
-      
+
       fprintf(f, ":%02X%04X00", buffer_i, start);
       csum += start;
-      csum += (start & 0xFF00) >> 16;
+      csum += start >> 8;
       csum += buffer_i;
       for (i = 0; i < buffer_i; i++) {
-        fprintf(f, "%02X", buffer[i]);
         csum += buffer[i];
+        fprintf(f, "%02X", buffer[i]);
       }
       csum = (~csum) + 1;
       fprintf(f, "%02X\n", csum);
+      break;
 
-      break; /* DONE */
-    
-    /* end-of-file record (01) */
     case REC_EOF:
       fprintf(f, ":00000001FF");
       break;
     
-    /* extended segment address record (02) */
     case REC_ESA:
-      ext = last_ext << 12;
+      ext = last_ext << 4;
       csum += 2;
-      csum += ext >> 16;
+      csum += ext >> 8;
       csum += ext;
-      fprintf(f, ":02000002%04X%02X\n", ext, csum);
+      csum = (~csum) + 1;
+      fprintf(f, ":02000002%04X%02X\n", ext & 0xFFFF, csum);
       break;
-    
-    /* extended linear address record (04) */
+
     case REC_ELA:
       ext = last_ext;
-      csum += 4;
-      csum += ext >> 16;
+      csum += 2;
+      csum += ext >> 8;
       csum += ext;
+      csum = (~csum) + 1;
       fprintf(f, ":02000004%04X%02X\n", ext, csum);
   }
 }
 
 static void buffer_data(FILE *f, uint8_t b)
+/* store byte in the buffer and flush if necessary */
 {
   buffer[buffer_i] = b;
   buffer_i++;
@@ -100,19 +100,19 @@ static void align(FILE *f, section *sec, atom *a)
   uint32_t align = balign(pos, a->align);
   int i;
   uint32_t len;
-  uint8_t *pad;
+  uint8_t *fill;
 
   if (align == 0)
     return;
 
-  if (a->type == SPACE && !a->content.sb->space) {
+  if (a->type == SPACE && a->content.sb->space == 0) {
     if (a->content.sb->maxalignbytes != 0 &&
         align > a->content.sb->maxalignbytes)
       return;
-    pad = a->content.sb->fill;
+    fill = a->content.sb->fill;
     len = a->content.sb->size;
   } else {
-    pad = sec->pad;
+    fill = sec->pad;
     len = sec->padbytes;
   }
 
@@ -120,16 +120,18 @@ static void align(FILE *f, section *sec, atom *a)
     buffer_data(f, 0);
     align--;
   }
-
+  printf("fill (%d): %04X\n",len,fill[0]);
   while (align >= len) {
     for(i = 0; i < len; i++) {
-      buffer_data(f, pad[i]);
+      buffer_data(f, fill[i]);
       align--;
     }
   }
 
-  while (len--)
+  while (len--) {
     buffer_data(f, 0);
+  }
+    
 }
 
 static void write_output(FILE *f, section *sec, symbol *sym)
@@ -160,7 +162,7 @@ static void write_output(FILE *f, section *sec, symbol *sym)
             buffer_data(f, ap->content.sb->fill[j]);
       }
     }
-    write_record(f, REC_DAT); /* flush the buffer */
+    write_record(f, REC_DAT);
   }
 
   write_record(f, REC_EOF);
