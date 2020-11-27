@@ -8,7 +8,7 @@
 #define I32HEX 2 /* supports 32-bit address space */
 
 /* maximum address for I16HEX */
-#define MEGABYTE 1 << 20
+#define MEGABYTE (1 << 20) - 1
 
 /* ihex record types */
 #define REC_DAT 0 /* data */
@@ -40,21 +40,13 @@ static void write_extended_record(FILE *f)
   uint16_t ext;
   uint8_t type;
 
-  switch (ihex_fmt) {
-    case I8HEX:
-      output_error(11, addr);
-      return;
-    case I16HEX:
-      if (addr >= MEGABYTE) {
-        output_error(11, addr);
-        return;
-      }
-      ext = ext_addr << 4;
-      type = REC_ESA;
-      break;
-    case I32HEX:
-      ext = ext_addr;
-      type = REC_ELA;
+  if (ihex_fmt == I16HEX) {
+    ext = ext_addr << 4;
+    type = REC_ESA;
+  }
+  if (ihex_fmt == I32HEX) {
+    ext = ext_addr;
+    type = REC_ELA;
   }
 
   csum = type;
@@ -70,21 +62,27 @@ static void write_data_record(FILE *f)
 {
   uint8_t csum;
   uint8_t i;
-  uint32_t start;
   uint16_t ext;
+  uint32_t start;
 
-  if (!buffer_i)
+  /* pre-flight checks */
+  if (buffer_i == 0)
     return;
-
+  if (ihex_fmt == I8HEX && addr > UINT16_MAX)
+    output_error(11, addr);
+  if (ihex_fmt == I16HEX && addr > MEGABYTE)
+    output_error(11, addr);
+  
   start = addr - buffer_i;
   ext = start >> 16;
   start &= 0xFFFF;
-
+  /* set/reset extended address if needed */
   if (ext != ext_addr) {
     ext_addr = ext;
     write_extended_record(f);
   }
 
+  /* write data record */
   fprintf(f, ":%02X%04X00", buffer_i, start);
   csum = start;
   csum += start >> 8;
@@ -96,6 +94,7 @@ static void write_data_record(FILE *f)
   csum = (~csum) + 1;
   fprintf(f, "%02X\n", csum);
 
+  /* reset the buffer index */
   buffer_i = 0;
 }
 
@@ -179,9 +178,7 @@ static void write_output(FILE *f, section *sec, symbol *sym)
   for (s = sec; s; s = s->next) {
     addr = ULLTADDR(s->org);
     for (a = s->first; a; a = a->next) {
-      /* check if atom needs to be aligned */
       align(f, s, a);
-      /* write to output buffer if necessary */
       if (a->type == DATA) {
         for (i = 0; i < a->content.db->size; i++) {
           buffer_data(f, a->content.db->data[i]);
