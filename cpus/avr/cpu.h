@@ -1,6 +1,6 @@
-/* AVR cpu backend for VASM
- * (c) in 2020 by Rida Dzhaafar
+/* AVR cpu backend
  */
+
 #define BIGENDIAN 0
 #define LITTLEENDIAN 1
 
@@ -16,8 +16,8 @@
 #define PARSE_CPU_LABEL(l, s) 0
 #define MNEMONIC_VALID(idx) avr_mnemonic_valid(idx)
 
-typedef int16_t taddr;
-typedef uint16_t utaddr;
+typedef int32_t taddr;
+typedef uint32_t utaddr;
 
 /* avr operand types */
 #define  UNKNOWN  0
@@ -38,13 +38,13 @@ typedef uint16_t utaddr;
 
 typedef struct {
   int type;
-  expr *val;
+  expr *value;
 } operand;
 
 typedef struct {
-  uint32_t opcode;
+  utaddr opcode;
   size_t size;
-  dblock (**opcode_gen)(instruction *);
+  utaddr (*sub_operands)(instruction *, utaddr);
 } mnemonic_extension;
 
 int avr_mnemonic_valid(int);

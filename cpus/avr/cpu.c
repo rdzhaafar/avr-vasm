@@ -1,5 +1,4 @@
-/* AVR cpu backend for VASM
- * (c) in 2020 by Rida Dzhaafar
+/* AVR cpu backend
  */
 #include "vasm.h"
 #include "operands.h"
